@@ -535,3 +535,14 @@ class Spark(Backend, RoundHalfToEven):
     def connect(data_directory):
         from ibis.tests.all.conftest import get_spark_testing_client
         return get_spark_testing_client(data_directory)
+
+
+class PySpark(Backend, RoundHalfToEven):
+    @staticmethod
+    def skip_if_missing_dependencies() -> None:
+        pytest.importorskip('pyspark')
+
+    @staticmethod
+    def connect(data_directory):
+        from ibis.tests.all.conftest import get_pyspark_testing_client
+        return get_pyspark_testing_client(data_directory)
