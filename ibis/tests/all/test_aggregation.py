@@ -158,4 +158,5 @@ def test_group_concat(
     expr = result_fn(alltypes)
     result = expr.execute()
     expected = expected_fn(df)
-    assert set(result) == set(expected)
+
+    assert set(result.iloc[:, 1]) == set(expected.iloc[:, 1])
