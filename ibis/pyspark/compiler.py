@@ -77,6 +77,14 @@ def compile_column(t, expr):
     return t.translate(op.table)[op.name]
 
 
+@compiles(ops.DistinctColumn)
+def compile_distinct(t, expr):
+    op = expr.op()
+    src_table = t.translate(op.arg.to_projection())
+    src_column_name = op.arg.get_name()
+    return src_table.select(src_column_name).distinct()[src_column_name]
+
+
 @compiles(ops.SelfReference)
 def compile_self_reference(t, expr):
     op = expr.op()
