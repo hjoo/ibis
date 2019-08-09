@@ -470,6 +470,266 @@ def compile_isinf(t, expr):
     return isinf(src_column)
 
 
+@compiles(ops.Uppercase)
+def compile_uppercase(t, expr):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def upper(v):
+        return v.str.upper()
+
+    src_column = t.translate(op.arg)
+    return upper(src_column)
+
+
+@compiles(ops.Lowercase)
+def compile_lowercase(t, expr):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def lower(v):
+        return v.str.lower()
+
+    src_column = t.translate(op.arg)
+    return lower(src_column)
+
+
+@compiles(ops.Reverse)
+def compile_reverse(t, expr):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def reverse(s):
+        return s.str[::-1]
+
+    src_column = t.translate(op.arg)
+    return reverse(src_column)
+
+
+@compiles(ops.Strip)
+def compile_strip(t, expr):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def strip(s):
+        return s.str.strip()
+
+    src_column = t.translate(op.arg)
+    return strip(src_column)
+
+
+@compiles(ops.LStrip)
+def compile_lstrip(t, expr):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def lstrip(s):
+        return s.str.lstrip()
+
+    src_column = t.translate(op.arg)
+    return lstrip(src_column)
+
+
+@compiles(ops.RStrip)
+def compile_rstrip(t, expr):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def rstrip(s):
+        return s.str.lstrip()
+
+    src_column = t.translate(op.arg)
+    return rstrip(src_column)
+
+
+@compiles(ops.Capitalize)
+def compile_capitalize(t, expr):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def capitalize(s):
+        return s.str.capitalize()
+
+    src_column = t.translate(op.arg)
+    return capitalize(src_column)
+
+
+@compiles(ops.Substring)
+def compile_substring(t, expr):
+    op = expr.op()
+
+    @F.udf('string')
+    def substring(s, start, length):
+        end = start + length
+        return s[start:end]
+
+    src_column = t.translate(op.arg)
+    start_column = t.translate(op.start)
+    length_column = t.translate(op.length)
+    return substring(src_column, start_column, length_column)
+
+
+@compiles(ops.StringLength)
+def compile_string_length(t, expr):
+    op = expr.op()
+
+    @pandas_udf('int', PandasUDFType.SCALAR)
+    def length(s):
+        return s.str.len()
+
+    src_column = t.translate(op.arg)
+    return length(src_column)
+
+
+@compiles(ops.StrRight)
+def compile_str_right(t, expr):
+    op = expr.op()
+
+    @F.udf('string')
+    def str_right(s, nchars):
+        return s[-nchars:]
+
+    src_column = t.translate(op.arg)
+    nchars_column = t.translate(op.nchars)
+    return str_right(src_column, nchars_column)
+
+
+@compiles(ops.Repeat)
+def compile_repeat(t, expr):
+    op = expr.op()
+
+    @F.udf('string')
+    def repeat(s, times):
+        return s * times
+
+    src_column = t.translate(op.arg)
+    times_column = t.translate(op.times)
+    return repeat(src_column, times_column)
+
+
+@compiles(ops.StringFind)
+def compile_string_find(t, expr):
+    op = expr.op()
+
+    @F.udf('long')
+    def str_find(s, substr, start, end):
+        return s.find(substr, start, end)
+
+    src_column = t.translate(op.arg)
+    substr_column = t.translate(op.substr)
+    start_column = t.translate(op.start) if op.start else F.lit(None)
+    end_column = t.translate(op.end) if op.end else F.lit(None)
+    return str_find(src_column, substr_column, start_column, end_column)
+
+
+@compiles(ops.Translate)
+def compile_translate(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    from_str = op.from_str.op().value
+    to_str = op.to_str.op().value
+    return F.translate(src_column, from_str, to_str)
+
+
+@compiles(ops.LPad)
+def compile_lpad(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    length = op.length.op().value
+    pad = op.pad.op().value
+    return F.lpad(src_column, length, pad)
+
+
+@compiles(ops.RPad)
+def compile_rpad(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    length = op.length.op().value
+    pad = op.pad.op().value
+    return F.rpad(src_column, length, pad)
+
+
+@compiles(ops.StringJoin)
+def compile_string_join(t, expr):
+    op = expr.op()
+
+    @F.udf('string')
+    def join(sep, arr):
+        return sep.join(arr)
+
+    sep_column = t.translate(op.sep)
+    arg = t.translate(op.arg)
+    return join(sep_column, F.array(arg))
+
+
+@compiles(ops.RegexSearch)
+def compile_regex_search(t, expr):
+    import re
+    op = expr.op()
+
+    @F.udf('boolean')
+    def regex_search(s, pattern):
+        return True if re.search(pattern, s) else False
+
+    src_column = t.translate(op.arg)
+    pattern = t.translate(op.pattern)
+    return regex_search(src_column, pattern)
+
+
+@compiles(ops.RegexExtract)
+def compile_regex_extract(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    pattern = op.pattern.op().value
+    idx = op.index.op().value
+    return F.regexp_extract(src_column, pattern, idx)
+
+
+@compiles(ops.RegexReplace)
+def compile_regex_replace(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    pattern = op.pattern.op().value
+    replacement = op.replacement.op().value
+    return F.regexp_replace(src_column, pattern, replacement)
+
+
+@compiles(ops.StringReplace)
+def compile_string_replace(t, expr):
+    return compile_regex_replace(t, expr)
+
+
+@compiles(ops.StringSplit)
+def compile_string_split(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    delimiter = op.delimiter.op().value
+    return F.split(src_column, delimiter)
+
+
+@compiles(ops.StringAscii)
+def compile_string_ascii(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    return F.ascii(src_column)
+
+
+@compiles(ops.StringSQLLike)
+def compile_string_like(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    pattern = op.pattern.op().value
+    return src_column.like(pattern)
+
+
 @compiles(ops.ValueList)
 def compile_value_list(t, expr):
     op = expr.op()
